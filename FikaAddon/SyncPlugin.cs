@@ -20,8 +20,8 @@ using UnityEngine;
 
 namespace Mortar.Fika
 {
-    [BepInPlugin("com.harmonyzt.Mortar.Fika", "Mortair Fika Sync", "1.0.0")]
-    [BepInDependency("com.harmonyzt.Mortair", "1.1.0")]
+    [BepInPlugin("com.harmonyzt.Mortar.Fika", "Mortar Fika Sync", "1.0.0")]
+    [BepInDependency("com.harmonyzt.Mortar", "1.0.0")]
     [BepInDependency("com.fika.core", "2.4.6")]
     public sealed class SyncPlugin : BaseUnityPlugin, IMortarNetwork
     {
