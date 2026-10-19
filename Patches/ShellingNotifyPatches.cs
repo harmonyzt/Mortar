@@ -13,7 +13,7 @@ namespace Mortar.Patches
 {
     /// <summary>
     /// SPT locale data has no "ShellingWarningMessage" key, so the vanilla warning notification prints the raw key.
-    /// Replaces it with the configured text.
+    /// Replaces it with the configured text, or suppresses it entirely when Warning Text is disabled.
     /// </summary>
     internal class ShellingWarningPatch : ModulePatch
     {
@@ -27,7 +27,15 @@ namespace Mortar.Patches
         {
             if (!CoopSupport.Enabled)
                 return true;
+
             EyeWarning.Queue();
+
+            if (!Plugin.EnableWarningText.Value)
+            {
+                // Warning text disabled: suppress both the custom and the vanilla notification.
+                return false;
+            }
+
             if (string.IsNullOrEmpty(Plugin.CustomWarningText.Value))
             {
                 return true;
@@ -122,7 +130,7 @@ namespace Mortar.Patches
             List<int> receivers = playersToNotify != null ? new List<int>(playersToNotify) : new List<int>();
             receivers.Add(myId);
             playersToNotify = receivers.ToArray();
-            
+
             return true;
         }
     }
@@ -151,7 +159,7 @@ namespace Mortar.Patches
             if (myPlayer != null && myPlayer.PlayerId == player.PlayerId)
             {
                 __result = true;
-                
+
                 return false;
             }
 

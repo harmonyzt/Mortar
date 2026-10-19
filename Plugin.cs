@@ -61,6 +61,7 @@ namespace Mortar
         internal static ConfigEntry<float> WarningDelaySeconds;
         internal static ConfigEntry<bool> WarnEveryone;
         internal static ConfigEntry<bool> ForceDetectorForLocalPlayer;
+        internal static ConfigEntry<bool> EnableWarningText;
         internal static ConfigEntry<string> CustomWarningText;
         internal static ConfigEntry<string> CustomBusyText;
         internal static ConfigEntry<bool> EnableEyeInteraction;
@@ -150,7 +151,7 @@ namespace Mortar
             Enable = Config.Bind("General", "Enable", true,
                 "Really? Do you need a description for that?");
 
-            EnableOnUnsupportedMaps = Config.Bind("General", "Enable On Unsupported Maps", true,
+            EnableOnUnsupportedMaps = Config.Bind("General", "Enable On Unsupported Maps", false,
                 "Make an artillery map config for maps that have no ArtilleryShelling config (Factory, Laboratory) so mortars work there too.");
 
             FlareTriggerModeConfig = Config.Bind("Flare", "Flare Trigger Mode", EFlareTriggerMode.VanillaOnly,
@@ -166,10 +167,10 @@ namespace Mortar
                 new ConfigDescription("Minimum seconds between two mod-triggered strikes.",
                     new AcceptableValueRange<float>(10f, 600f)));
 
-            EnableRandomAmbientStrikes = Config.Bind("Ambient", "Enable Random Ambient Strikes", false,
+            EnableRandomAmbientStrikes = Config.Bind("Ambient", "Enable Random Ambient Strikes", true,
                 "Periodically shell a random spot near you.");
 
-            RandomStrikeMinSeconds = Config.Bind("Ambient", "Interval Min Seconds", 1800f,
+            RandomStrikeMinSeconds = Config.Bind("Ambient", "Interval Min Seconds", 600f,
                 new ConfigDescription("Minimum seconds between ambient strikes.",
                     new AcceptableValueRange<float>(10f, 3600f)));
 
@@ -200,9 +201,12 @@ namespace Mortar
             ForceDetectorForLocalPlayer = Config.Bind("Warning", "Detector Alarm For Local Player", false,
                 "Treat yourself as if you carry The Eye, so you also get the proximity alarm near a strike zone.");
 
+            EnableWarningText = Config.Bind("Warning", "Show Warning Text", false,
+                "Show a warning notification when artillery is inbound. Off = no warning notification at all; the Eye / detector alarm is unaffected.");
+
             CustomWarningText = Config.Bind("Warning", "Warning Text",
                 "WARNING! Artillery strike inbound on your position! Seek nearest bunker!",
-                "Warning notification text");
+                "Warning notification text.");
 
             CustomBusyText = Config.Bind("Warning", "Busy Text",
                 "Artillery unavailable: another strike is already in progress.",
@@ -215,26 +219,26 @@ namespace Mortar
             //     "log Eye/jammer poses and bypass left-arm overrides");
 
             EnableScheduledShelling = Config.Bind("Scheduled", "Enable Scheduled Shelling", false,
-                "Turn on BSGs planned map-wide shelling (PlanedShellingOn) for the current raids config. Off by default.");
+                "Turn on BSGs planned map-wide shelling for the current raids config.");
 
             ScheduledShellingDelaySeconds = Config.Bind("Scheduled", "Scheduled Delay Seconds", 60f,
                 new ConfigDescription(
-                    "Seconds after raid start before the planned shelling begins (InitShellingTimer).",
+                    "Seconds after raid start before the planned shelling begins.",
                     new AcceptableValueRange<float>(5f, 600f)));
 
             SynthZoneSizeMeters = Config.Bind("Synthesized", "Zone Size Meters", 80f,
-                new ConfigDescription("Edge length of the synthesized impact grid on maps without artillery config.",
+                new ConfigDescription("Edge length of the impact grid on maps without artillery config.",
                     new AcceptableValueRange<float>(20f, 200f)));
 
             SynthRounds = Config.Bind("Synthesized", "Rounds Per Strike", 4,
-                new ConfigDescription("Volleys per synthesized strike.", new AcceptableValueRange<int>(1, 20)));
+                new ConfigDescription("Volleys per strike.", new AcceptableValueRange<int>(1, 20)));
 
             SynthShotsPerRound = Config.Bind("Synthesized", "Shots Per Round", 5,
-                new ConfigDescription("Shells per volley on synthesized maps.", new AcceptableValueRange<int>(1, 30)));
+                new ConfigDescription("Shells per volley on maps.", new AcceptableValueRange<int>(1, 30)));
 
             SynthGunDistance = Config.Bind("Synthesized", "Gun Distance Meters", 250f,
                 new ConfigDescription(
-                    "How far from the target the synthesized mortar batteries sit (repositioned on every strike).",
+                    "How far from the target the mortar batteries sit (repositioned on every strike).",
                     new AcceptableValueRange<float>(50f, 1000f)));
 
             UseModExplosionParams = Config.Bind("Explosion", "Use Mortar Explosion Params", true,
