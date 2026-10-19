@@ -135,7 +135,7 @@ namespace Mortar
 
             EnsureFlareSubscription();
 
-            Logger.LogInfo("[Mortar] Loaded!");
+            Logger.LogInfo("[Mortar] Loaded! Terrifying, isn't it...");
         }
 
         private void OnDestroy()

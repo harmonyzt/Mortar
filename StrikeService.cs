@@ -101,26 +101,26 @@ namespace Mortair
             ArtilleryShellingControllerServer controller = ArtilleryShellingControllerServer.Instance;
             if (controller == null)
             {
-                Plugin.LogSource.LogDebug($"[Mortair] strike ({reason}) ignored: no shelling controller on this map.");
+                Plugin.LogSource.LogDebug($"[Mortar] strike ({reason}) ignored: no shelling controller on this map.");
                 return false;
             }
 
             if (Time.realtimeSinceStartup - _lastStrikeTime < Plugin.StrikeCooldownSeconds.Value)
             {
-                Plugin.LogSource.LogDebug($"[Mortair] strike ({reason}) ignored: cooldown.");
+                Plugin.LogSource.LogDebug($"[Mortar] strike ({reason}) ignored: cooldown.");
                 return false;
             }
 
             if (IsBusy(controller))
             {
-                Plugin.LogSource.LogDebug($"[Mortair] strike ({reason}) rejected: MaxCalledShellingCount reached.");
+                Plugin.LogSource.LogDebug($"[Mortar] strike ({reason}) rejected: MaxCalledShellingCount reached.");
                 NotifyBusy(source);
                 return false;
             }
 
             if (!ValidateMapConfig(controller, out string problem))
             {
-                Plugin.LogSource.LogWarning($"[Mortair] strike ({reason}) rejected: {problem}");
+                Plugin.LogSource.LogWarning($"[Mortar] strike ({reason}) rejected: {problem}");
                 return false;
             }
 
