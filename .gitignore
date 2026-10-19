@@ -1,0 +1,8 @@
+bin/
+*obj*
+*.txt
+*vs*
+*idea*
+Folder.DotSettings.user
+Mortar.sln.DotSettings.user
+

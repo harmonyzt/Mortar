@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Version>1.1.1</Version>
+    <OutputPath>..\bin\$(Configuration)\</OutputPath>
+    <PackageId>Mortar.Fika</PackageId>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Mortair.csproj"><Private>false</Private></ProjectReference>
+    <ProjectReference Include="..\Mortar.csproj" />
+    <Reference Include="Fika.Core"><HintPath>$(GameRoot)\BepInEx\plugins\Fika\Fika.Core.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+</Project>

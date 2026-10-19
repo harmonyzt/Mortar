@@ -1,0 +1,31 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.10.34928.147
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mortar", "Mortar.csproj", "{3C1F0A54-6D2B-4E7A-9C31-8F4E2A7D6B19}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mortar.Fika", "FikaAddon\Mortar.Fika.csproj", "{5BBCA9CF-01DB-487E-9C4A-0C8D3191B659}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5BBCA9CF-01DB-487E-9C4A-0C8D3191B659}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5BBCA9CF-01DB-487E-9C4A-0C8D3191B659}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5BBCA9CF-01DB-487E-9C4A-0C8D3191B659}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5BBCA9CF-01DB-487E-9C4A-0C8D3191B659}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3C1F0A54-6D2B-4E7A-9C31-8F4E2A7D6B19}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3C1F0A54-6D2B-4E7A-9C31-8F4E2A7D6B19}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3C1F0A54-6D2B-4E7A-9C31-8F4E2A7D6B19}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3C1F0A54-6D2B-4E7A-9C31-8F4E2A7D6B19}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {7B2E6C81-4A93-4D0F-B1E5-92D3C6A84F27}
+	EndGlobalSection
+EndGlobal
