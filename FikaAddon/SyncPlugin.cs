@@ -249,6 +249,9 @@ namespace Mortar.Fika
                     case PacketKind.Eye:
                         ApplyEye(packet);
                         break;
+                    // case PacketKind.Siren:
+                    //     MapSiren.Trigger();
+                    //     break;
                 }
             }
             catch (Exception ex)
@@ -378,6 +381,13 @@ namespace Mortar.Fika
                     }
                 }
             }
+
+            // if (Singleton<GameWorld>.Instance != null &&
+            //     string.Equals(Singleton<GameWorld>.Instance.LocationId, MapSiren.ReserveLocationId,
+            //         StringComparison.OrdinalIgnoreCase))
+            // {
+            //     Send(new MortairPacket { Kind = PacketKind.Siren, Text = ev.ZoneId });
+            // }
         }
 
         private void OnZoneEnded(LastShellingExplosionZoneEvent ev)

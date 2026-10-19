@@ -18,7 +18,8 @@ namespace Mortar.Fika
         Warning,
         Alert,
         Busy,
-        Eye
+        Eye,
+        Siren
     }
 
     internal struct MortairPacket : INetSerializable
