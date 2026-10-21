@@ -7,6 +7,9 @@ namespace Mortar
     {
         bool IsClient { get; }
         bool RequestStrike(Vector3 position, string reason, IPlayer source);
+
+        // Host-only so we can tell every client to play the siren for this location
+        void BroadcastSiren(string locationId);
     }
 
     public static class CoopSupport

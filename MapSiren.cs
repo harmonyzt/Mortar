@@ -85,9 +85,15 @@ namespace Mortar
             Plugin.Instance.StartCoroutine(Load(sound.ResourcePath));
         }
 
-        public static void Trigger()
+        public static void Trigger(string expectedLocationId = null)
         {
             if (!Plugin.Enable.Value)
+            {
+                return;
+            }
+
+            // Only the host decides whether the event happens
+            if (!CoopSupport.IsClient && !CoopSupport.Enabled)
             {
                 return;
             }
@@ -98,9 +104,20 @@ namespace Mortar
                 return;
             }
 
-            SirenMapDefinition map = _map ?? SirenRegistry.Find(world.LocationId);
-            if (map == null || !map.IsEnabled ||
-                !string.Equals(world.LocationId, map.LocationId, StringComparison.OrdinalIgnoreCase))
+            string locationId = world.LocationId;
+            if (!string.IsNullOrEmpty(expectedLocationId) &&
+                !string.Equals(locationId, expectedLocationId, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            SirenMapDefinition map = _map;
+            if (map == null || !string.Equals(map.LocationId, locationId, StringComparison.OrdinalIgnoreCase))
+            {
+                map = SirenRegistry.Find(locationId);
+            }
+
+            if (map == null || !map.IsEnabled)
             {
                 return;
             }
@@ -111,6 +128,15 @@ namespace Mortar
                 Plugin.LogSource.LogInfo($"[Mortar] {map.Name} siren skipped: still playing.");
 
                 return;
+            }
+
+            // The host owns the event. Set the guard first so a warning fallback or a
+            // duplicate shelling entry cannot broadcast it twice.
+            _playingUntil = now + 2f;
+            if (!CoopSupport.IsClient && CoopSupport.Network != null)
+            {
+                Plugin.LogSource.LogInfo($"[Mortar] Broadcasting {map.Name} siren.");
+                CoopSupport.Network.BroadcastSiren(map.LocationId);
             }
 
             List<(SirenSoundDefinition Definition, AudioClip Clip)> ready = new();
@@ -160,10 +186,59 @@ namespace Mortar
                 longest = Mathf.Max(longest, Play(map, definition, clip));
             }
 
-            _playingUntil = now + longest + 2f;
+            _playingUntil = now + Mathf.Max(longest, 2f) + 2f;
         }
 
         private static float Play(SirenMapDefinition map, SirenSoundDefinition definition, AudioClip clip)
+        {
+            float duration = definition.Loop
+                ? Mathf.Max(definition.LoopSeconds, clip.length)
+                : clip.length;
+
+            float delay = Mathf.Max(0f, definition.DelaySeconds);
+
+            if (delay > 0f)
+            {
+                Plugin.Instance.StartCoroutine(PlayDelayed(map, definition, clip, delay, duration));
+            }
+            else
+            {
+                PlayNow(map, definition, clip, duration);
+            }
+
+            return delay + duration;
+        }
+
+        private static IEnumerator PlayDelayed(
+            SirenMapDefinition map,
+            SirenSoundDefinition definition,
+            AudioClip clip,
+            float delay,
+            float duration)
+        {
+            yield return new WaitForSecondsRealtime(delay);
+
+            if (!Plugin.Enable.Value)
+            {
+                yield break;
+            }
+
+            // A delayed sound must not fire after the raid ended or after a map change.
+            GameWorld world = Singleton<GameWorld>.Instance;
+            if (world == null ||
+                !string.Equals(world.LocationId, map.LocationId, StringComparison.OrdinalIgnoreCase))
+            {
+                yield break;
+            }
+
+            PlayNow(map, definition, clip, duration);
+        }
+
+        private static void PlayNow(
+            SirenMapDefinition map,
+            SirenSoundDefinition definition,
+            AudioClip clip,
+            float duration)
         {
             try
             {
@@ -172,7 +247,7 @@ namespace Mortar
                 {
                     Plugin.LogSource.LogWarning("[Mortar] EFT audio is not available, siren skipped.");
 
-                    return 0f;
+                    return;
                 }
 
                 Vector3 origin = definition.Origin ?? map.Origin;
@@ -193,7 +268,7 @@ namespace Mortar
                 {
                     Plugin.LogSource.LogWarning($"[Mortar] Could not borrow a source for '{definition.ResourcePath}'.");
 
-                    return 0f;
+                    return;
                 }
 
                 // Cull at 2 km so the source starts even when we are far away
@@ -203,22 +278,15 @@ namespace Mortar
                     source.SetRolloff(definition.MaxDistance);
                 }
 
-                float duration = definition.Loop
-                    ? Mathf.Max(definition.LoopSeconds, clip.length)
-                    : clip.length;
-
                 // PlayAtPoint never sets base volume and we drive occlusion ourselves
                 source.Loop = definition.Loop;
                 source.SetBaseVolume(definition.Volume);
                 source.UpdateSourceVolume(1f);
                 Plugin.Instance.StartCoroutine(DriveSource(source, definition, origin, duration));
-
-                return duration;
             }
             catch (Exception ex)
             {
                 Plugin.LogSource.LogWarning($"[Mortar] Siren playback failed: {ex}");
-                return 0f;
             }
         }
 

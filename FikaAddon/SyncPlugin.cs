@@ -15,13 +15,12 @@ using Fika.Core.Modding.Events;
 using Fika.Core.Networking;
 using Fika.Core.Networking.LiteNetLib;
 using HarmonyLib;
-using Mortair;
 using UnityEngine;
 
 namespace Mortar.Fika
 {
-    [BepInPlugin("com.harmonyzt.Mortar.Fika", "Mortar Fika Sync", "1.0.0")]
-    [BepInDependency("com.harmonyzt.mortar", "1.0.0")]
+    [BepInPlugin("com.harmonyzt.Mortar.Fika", "Mortar Fika Sync", "1.1.0")]
+    [BepInDependency("com.harmonyzt.mortar", "1.1.0")]
     [BepInDependency("com.fika.core", "2.4.6")]
     public sealed class SyncPlugin : BaseUnityPlugin, IMortarNetwork
     {
@@ -143,6 +142,18 @@ namespace Mortar.Fika
             return true;
         }
 
+        public void BroadcastSiren(string locationId)
+        {
+            if (IsClient || _manager == null)
+            {
+                return;
+            }
+
+            // Logger.LogDebug($"[Mortar] Broadcasting siren for '{locationId}'.");
+            
+            Send(new MortairPacket { Kind = PacketKind.Siren, Text = locationId });
+        }
+
         private static FikaPlayer Find(int netId)
         {
             return CoopHandler.TryGetCoopHandler(out CoopHandler handler) &&
@@ -249,9 +260,9 @@ namespace Mortar.Fika
                     case PacketKind.Eye:
                         ApplyEye(packet);
                         break;
-                    // case PacketKind.Siren:
-                    //     MapSiren.Trigger();
-                    //     break;
+                    case PacketKind.Siren:
+                        MapSiren.Trigger(packet.Text);
+                        break;
                 }
             }
             catch (Exception ex)
@@ -381,13 +392,6 @@ namespace Mortar.Fika
                     }
                 }
             }
-
-            // if (Singleton<GameWorld>.Instance != null &&
-            //     string.Equals(Singleton<GameWorld>.Instance.LocationId, MapSiren.ReserveLocationId,
-            //         StringComparison.OrdinalIgnoreCase))
-            // {
-            //     Send(new MortairPacket { Kind = PacketKind.Siren, Text = ev.ZoneId });
-            // }
         }
 
         private void OnZoneEnded(LastShellingExplosionZoneEvent ev)
@@ -404,13 +408,13 @@ namespace Mortar.Fika
             {
                 return;
             }
-            
+
             FikaPlayer player = FindPlayerId(ev.PlayerId);
             if (player == null)
             {
                 return;
             }
-            
+
             if (_alerts.TryGetValue(player.NetId, out AlertState last) && last.Zone == ev.ZoneId)
             {
                 if ((last.Point - ev.NearestPoint).sqrMagnitude < 0.01f || Time.unscaledTime - last.Time < 0.25f)
@@ -419,8 +423,10 @@ namespace Mortar.Fika
                 }
             }
 
-            _alerts[player.NetId] = new AlertState { Zone = ev.ZoneId, Point = ev.NearestPoint, Time = Time.unscaledTime };
-            Send(new MortairPacket { Kind = PacketKind.Alert, NetId = player.NetId, Text = ev.ZoneId, Position = ev.NearestPoint });
+            _alerts[player.NetId] = new AlertState
+                { Zone = ev.ZoneId, Point = ev.NearestPoint, Time = Time.unscaledTime };
+            Send(new MortairPacket
+                { Kind = PacketKind.Alert, NetId = player.NetId, Text = ev.ZoneId, Position = ev.NearestPoint });
         }
 
         private void OnNotify(NotifyEvent ev)

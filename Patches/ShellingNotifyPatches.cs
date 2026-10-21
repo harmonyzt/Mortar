@@ -28,7 +28,12 @@ namespace Mortar.Patches
             }
 
             EyeWarning.Queue();
-            MapSiren.Trigger();
+
+            // solo fallback
+            if (!CoopSupport.IsClient)
+            {
+                MapSiren.Trigger();
+            }
 
             // Suppress both the custom and the vanilla notification
             if (!Plugin.EnableWarningText.Value)

@@ -26,7 +26,7 @@ namespace Mortar
     //     Crosshair
     // }
 
-    [BepInPlugin("com.harmonyzt.mortar", "Mortar Strikes", "1.0.0")]
+    [BepInPlugin("com.harmonyzt.mortar", "Mortar Strikes", "1.1.0")]
     public class Plugin : BaseUnityPlugin
     {
         public static ManualLogSource LogSource;
