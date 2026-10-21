@@ -2,14 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CommonAssets.Scripts.ArtilleryShelling;
-using Comfort.Common;
 using EFT;
 using EFT.Communications;
 using EFT.GlobalEvents;
-using Mortar;
 using UnityEngine;
 
-namespace Mortair
+namespace Mortar
 {
     /// <summary>
     /// Place where a real mortar strike is started
@@ -241,6 +239,7 @@ namespace Mortair
                     notifyEvent.MessageType = NotifyEvent.EMessageType.ArtilleryBusy;
                     notifyEvent.ReceiverId = source.Id;
                     notifyEvent.Invoke();
+                    
                     return;
                 }
             }

@@ -8,7 +8,6 @@ using Comfort.Common;
 using EFT;
 using EFT.GlobalEvents;
 using EFT.InventoryLogic;
-using Mortair;
 using Mortar.Patches;
 using UnityEngine;
 
@@ -67,7 +66,7 @@ namespace Mortar
         internal static ConfigEntry<bool> EnableEyeInteraction;
         // internal static ConfigEntry<EyeProbeMode> EyeProbe;
 
-        // Scheduled (planned) shelling
+        // Scheduled (planned) shelling (BSG)
         internal static ConfigEntry<bool> EnableScheduledShelling;
         internal static ConfigEntry<float> ScheduledShellingDelaySeconds;
 
@@ -77,7 +76,7 @@ namespace Mortar
         internal static ConfigEntry<int> SynthShotsPerRound;
         internal static ConfigEntry<float> SynthGunDistance;
 
-        // Explosion / lethality (ProjectileExplosionParams)
+        // ProjectileExplosionParams
         internal static ConfigEntry<bool> UseModExplosionParams;
         internal static ConfigEntry<float> MinExplosionDistance;
         internal static ConfigEntry<float> MaxExplosionDistance;
@@ -99,6 +98,7 @@ namespace Mortar
         internal static ConfigEntry<float> DirectionalDamageMultiplier;
         internal static ConfigEntry<int> MaxSimultaneousStrikes;
 
+        // Other
         private Action _unsubscribeFlare;
         private bool _raidActive;
         private float _nextAmbientStrikeTime;
@@ -107,6 +107,7 @@ namespace Mortar
         {
             _raidActive = false;
             EyeWarning.Reset();
+            MapSiren.ResetRaidState();
         }
 
         private void Awake()
@@ -122,17 +123,21 @@ namespace Mortar
             new ShellingWarningPatch().Enable();
             new ShellingBusyPatch().Enable();
             new ShellingNotifyEveryonePatch().Enable();
+            new MapSirenTriggerPatch().Enable();
+            new MapSirenGameStartedPatch().Enable();
             new ForceDetectorPatch().Enable();
             new FragmentAmmoPatch().Enable();
             new ArtilleryDamageSourcePatch().Enable();
             new ArtilleryClientDamageSourcePatch().Enable();
+
             new EyeGripPatch().Enable();
             new EyeGripResetPatch().Enable();
             new EyeLeftArmBlendPatch().Enable();
             new EyeSwitchSoundPatch().Enable();
             new EyeUseCompletePatch().Enable();
-            //new EyeProbeSpawnPatch().Enable();
             new EyeAlarmPatch().Enable();
+
+            //new EyeProbeSpawnPatch().Enable();
 
             EnsureFlareSubscription();
 
@@ -144,6 +149,7 @@ namespace Mortar
             _unsubscribeFlare?.Invoke();
             _unsubscribeFlare = null;
             EyeWarning.Reset();
+            MapSiren.Dispose();
         }
 
         private void BindConfig()
@@ -154,6 +160,10 @@ namespace Mortar
             EnableOnUnsupportedMaps = Config.Bind("General", "Enable On Unsupported Maps", false,
                 "Make an artillery map config for maps that have no ArtilleryShelling config (Factory, Laboratory) so mortars work there too.");
 
+            StrikeCooldownSeconds = Config.Bind("General", "Strike Cooldown Seconds", 30f,
+                new ConfigDescription("Minimum seconds between two mod-triggered strikes.",
+                    new AcceptableValueRange<float>(10f, 600f)));
+
             FlareTriggerModeConfig = Config.Bind("Flare", "Flare Trigger Mode", EFlareTriggerMode.VanillaOnly,
                 "Off: flares never call mortars. VanillaOnly: only the real Signal flare (Blue) works, handled by BSG. AnyFlare: any signal flare calls a strike.");
 
@@ -162,10 +172,6 @@ namespace Mortar
 
             StrikeAtFlarePosition = Config.Bind("Flare", "Strike At Flare Position", false,
                 "False sends mortar to your position, True send where the flare is hanging in the air.");
-
-            StrikeCooldownSeconds = Config.Bind("Hotkey", "Strike Cooldown Seconds", 30f,
-                new ConfigDescription("Minimum seconds between two mod-triggered strikes.",
-                    new AcceptableValueRange<float>(10f, 600f)));
 
             EnableRandomAmbientStrikes = Config.Bind("Ambient", "Enable Random Ambient Strikes", true,
                 "Periodically shell a random spot near you.");
@@ -187,12 +193,13 @@ namespace Mortar
                     "Probability (0..1) that an ambient strike actually happens when the random interval elapses. Map Ambient Chances can override this per map.",
                     new AcceptableValueRange<float>(0f, 1f)));
 
-            MapAmbientChances = Config.Bind("Ambient", "Map Ambient Chances", "bigmap=0.25;lighthouse=0.10;interchange=0.10;Sandbox=0.05;Sandbox_high=0.10;factory4_day=0;factory4_night=0;RezervBase=0.25;shoreline=0.25;woods=0.30;TarkovStreets=0.20;",
-                "Per-map chance overrides as locationId=chance pairs separated by ';' (chance 0..1, e.g. bigmap=0.25;lighthouse=0.5). maps not listed fall back to Ambient Strike Chance.");
+            MapAmbientChances = Config.Bind("Ambient", "Map Ambient Chances",
+                "bigmap=0.25;lighthouse=0.10;interchange=0.10;Sandbox=0.05;Sandbox_high=0.10;factory4_day=0;factory4_night=0;RezervBase=0.25;shoreline=0.25;woods=0.30;TarkovStreets=0.20;",
+                "Per-map chance overrides as locationId=chance pairs separated by ';' (chance 0..1, e.g. bigmap=0.25;lighthouse=0.5). Maps not listed fall back to Ambient Strike Chance.");
 
             WarningDelaySeconds = Config.Bind("Warning", "Warning Delay Seconds", 10f,
                 new ConfigDescription(
-                    "Seconds between calling a strike and the shells landing (the warning shows BeforeShellingSignalTime seconds earlier). Negative keeps the map default.",
+                    "Seconds between calling a strike and the shells landing. Negative keeps the map default.",
                     new AcceptableValueRange<float>(-1f, 120f)));
 
             WarnEveryone = Config.Bind("Warning", "Warn Me Even Without Detector", false,
@@ -202,7 +209,7 @@ namespace Mortar
                 "Treat yourself as if you carry The Eye, so you also get the proximity alarm near a strike zone.");
 
             EnableWarningText = Config.Bind("Warning", "Show Warning Text", false,
-                "Show a warning notification when artillery is inbound. Off = no warning notification at all; the Eye / detector alarm is unaffected.");
+                "Show a warning notification when artillery is inbound. Off = no warning notification at all. The Eye / detector alarm is unaffected.");
 
             CustomWarningText = Config.Bind("Warning", "Warning Text",
                 "WARNING! Artillery strike inbound on your position! Seek nearest bunker!",
@@ -210,10 +217,12 @@ namespace Mortar
 
             CustomBusyText = Config.Bind("Warning", "Busy Text",
                 "Artillery unavailable: another strike is already in progress.",
-                "Notification shown when a strike request is rejected because MaxCalledShellingCount is reached.");
+                "Notification shown when a strike request is rejected when max cap is reached.");
 
             EnableEyeInteraction = Config.Bind("Warning", "Hold The Eye On Warning", true,
                 "When carrying The Eye, your PMC will interrupt you and pick it up in his hands so you'd have to disable the alarm.");
+
+            SirenRegistry.BindConfig(Config);
 
             // EyeProbe = Config.Bind("Debug", "Eye Animation Comparison", EyeProbeMode.Off,
             //     "log Eye/jammer poses and bypass left-arm overrides");
@@ -226,15 +235,15 @@ namespace Mortar
                     "Seconds after raid start before the planned shelling begins.",
                     new AcceptableValueRange<float>(5f, 600f)));
 
-            SynthZoneSizeMeters = Config.Bind("Synthesized", "Zone Size Meters", 80f,
+            SynthZoneSizeMeters = Config.Bind("Synthesized", "Zone Size Meters", 100f,
                 new ConfigDescription("Edge length of the impact grid on maps without artillery config.",
                     new AcceptableValueRange<float>(20f, 200f)));
 
-            SynthRounds = Config.Bind("Synthesized", "Rounds Per Strike", 4,
-                new ConfigDescription("Volleys per strike.", new AcceptableValueRange<int>(1, 20)));
+            SynthRounds = Config.Bind("Synthesized", "Rounds Per Strike", 5,
+                new ConfigDescription("Rounds per strike.", new AcceptableValueRange<int>(1, 20)));
 
-            SynthShotsPerRound = Config.Bind("Synthesized", "Shots Per Round", 5,
-                new ConfigDescription("Shells per volley on maps.", new AcceptableValueRange<int>(1, 30)));
+            SynthShotsPerRound = Config.Bind("Synthesized", "Shots Per Round", 8,
+                new ConfigDescription("Shells per strike on maps.", new AcceptableValueRange<int>(1, 30)));
 
             SynthGunDistance = Config.Bind("Synthesized", "Gun Distance Meters", 250f,
                 new ConfigDescription(
@@ -243,14 +252,14 @@ namespace Mortar
 
             UseModExplosionParams = Config.Bind("Explosion", "Use Mortar Explosion Params", true,
                 new ConfigDescription(
-                    "Overwrite the ProjectileExplosionParams values below whenever a raid starts. Off = keep the server's values (the values below are then only used if the server sent none)."));
+                    "Overwrite values below whenever a raid starts. DO NOT EDIT IF YOU DONT KNOW WHAT SETTING DOES. Off = keep the server's values (the values below are then only used if the server sent none)."));
 
             MinExplosionDistance = Config.Bind("Explosion", "Full Damage Distance", 1.7f,
                 new ConfigDescription(
                     "Distance (m) from the impact at which a fragment deals full Strength damage; damage falls off linearly to zero at No Damage Distance.",
                     new AcceptableValueRange<float>(0.1f, 50f)));
 
-            MaxExplosionDistance = Config.Bind("Explosion", "No Damage Distance", 15f,
+            MaxExplosionDistance = Config.Bind("Explosion", "No Damage Distance", 14f,
                 new ConfigDescription("Distance (m) beyond which fragments deal no damage at all.",
                     new AcceptableValueRange<float>(1f, 150f)));
 
@@ -258,7 +267,7 @@ namespace Mortar
                 new ConfigDescription("Base damage of a fragment at Full Damage Distance.",
                     new AcceptableValueRange<float>(1f, 500f)));
 
-            FragmentCount = Config.Bind("Explosion", "Fragments Per Shell", 40,
+            FragmentCount = Config.Bind("Explosion", "Fragments Per Shell", 50,
                 new ConfigDescription("Number of fragments simulated per shell impact.",
                     new AcceptableValueRange<int>(1, 100)));
 
@@ -289,10 +298,10 @@ namespace Mortar
 
             ContusionNearDistance = Config.Bind("Explosion", "Contusion Near Distance", 6f,
                 new ConfigDescription(
-                    "Within this distance (m) the shell applies full contusion (ear-ringing stagger). Is not recommended to tweak if you have Bring Back Concussion mod.",
+                    "Within this distance (m) the shell applies full contusion. Is not recommended to tweak if you have Bring Back Concussion mod.",
                     new AcceptableValueRange<float>(0f, 50f)));
 
-            ContusionFarDistance = Config.Bind("Explosion", "Contusion Far Distance", 18f,
+            ContusionFarDistance = Config.Bind("Explosion", "Contusion Far Distance", 14f,
                 new ConfigDescription(
                     "Beyond this distance (m) there is no contusion at all; it fades linearly. Is not recommended to tweak if you have Bring Back Concussion mod.",
                     new AcceptableValueRange<float>(0f, 150f)));
@@ -357,6 +366,7 @@ namespace Mortar
             };
         }
 
+        // Make sure we are subscribed to the flare firing event
         private void EnsureFlareSubscription()
         {
             if (_unsubscribeFlare != null)
@@ -375,6 +385,7 @@ namespace Mortar
             }
         }
 
+        // If flare hits the success height, this gets triggered
         private void OnFlareSuccess(FlareSuccessEvent flare)
         {
             try
@@ -388,7 +399,7 @@ namespace Mortar
                 if (mode == EFlareTriggerMode.Off ||
                     (mode == EFlareTriggerMode.VanillaOnly && CoopSupport.Network == null))
                 {
-                    // VanillaOnly is handled by BSG's own ArtilleryShellingControllerServer.OnFlareSuccessEvent.
+                    // VanillaOnly is handled by BSG's ArtilleryShellingControllerServer.OnFlareSuccessEvent.
                     return;
                 }
 
@@ -488,17 +499,21 @@ namespace Mortar
             }
         }
 
+        // Custom ambient strikes (not BSG route of handling)
         private void HandleAmbient(ArtilleryShellingControllerServer controller)
         {
             Player player = controller._gameWorld?.MainPlayer;
+
             if (player == null && controller._gameWorld != null)
             {
                 foreach (Player candidate in controller._gameWorld.AllAlivePlayersList)
+                {
                     if (!candidate.IsAI && candidate.HealthController.IsAlive)
                     {
                         player = candidate;
                         break;
                     }
+                }
             }
 
             if (player == null || !player.HealthController.IsAlive)
@@ -558,6 +573,7 @@ namespace Mortar
         {
             Dictionary<string, float> parsed = new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase);
             string[] entries = raw.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries);
+
             for (int i = 0; i < entries.Length; i++)
             {
                 string entry = entries[i].Trim();

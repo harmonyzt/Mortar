@@ -12,7 +12,7 @@ namespace Mortar.Fika
     {
         private static void Prefix(GameWorld gameWorld, JsonType.LocationSettings.Location location)
         {
-            // Fika does not use LocalGame.Run, which the base mod patches for solo raids.
+            // Fika doesn't use LocalGame.Run, which the base mod patches for solo raids
             CoopSupport.HostRules = null;
             CoopSupport.PrepareMap(gameWorld.LocationId, FikaBackendUtils.IsClient);
             if (location.Id != gameWorld.LocationId)
@@ -43,7 +43,7 @@ namespace Mortar.Fika
     {
         private static void Postfix(ArtilleryProjectileClient __result)
         {
-            // The native pool prewarms before the client's settings handshake completes.
+            // The native pool prewarms before the client's settings handshake completes
             if (CoopSupport.Enabled)
             {
                 __result.SetExplosiveItemParams(Comfort.Common.Singleton<GlobalConfiguration>.Instance.ArtilleryShelling

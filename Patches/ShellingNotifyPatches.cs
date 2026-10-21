@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Reflection;
 using CommonAssets.Scripts.ArtilleryShelling.Client;
@@ -6,14 +5,12 @@ using EFT;
 using EFT.Communications;
 using EFT.GlobalEvents;
 using HarmonyLib;
-using Mortair;
 using SPT.Reflection.Patching;
 
 namespace Mortar.Patches
 {
     /// <summary>
-    /// SPT locale data has no "ShellingWarningMessage" key, so the vanilla warning notification prints the raw key.
-    /// Replaces it with the configured text, or suppresses it entirely when Warning Text is disabled.
+    /// SPT locale data has no "ShellingWarningMessage" key, so we gotta have custom thing
     /// </summary>
     internal class ShellingWarningPatch : ModulePatch
     {
@@ -26,13 +23,16 @@ namespace Mortar.Patches
         private static bool Prefix()
         {
             if (!CoopSupport.Enabled)
+            {
                 return true;
+            }
 
             EyeWarning.Queue();
+            MapSiren.Trigger();
 
+            // Suppress both the custom and the vanilla notification
             if (!Plugin.EnableWarningText.Value)
             {
-                // Warning text disabled: suppress both the custom and the vanilla notification.
                 return false;
             }
 
@@ -42,12 +42,13 @@ namespace Mortar.Patches
             }
 
             NotificationManager.DisplayMessageNotification(Plugin.CustomWarningText.Value);
+
             return false;
         }
     }
 
     /// <summary>
-    /// Same problem for "ShellingBusy" (rejected strike): show the configured text instead of the raw key.
+    /// Show the configured text instead of the raw key. (because SPT doesn't have a locale key for it)
     /// </summary>
     internal class ShellingBusyPatch : ModulePatch
     {
@@ -85,13 +86,13 @@ namespace Mortar.Patches
             }
 
             NotificationManager.DisplayMessageNotification(Plugin.CustomBusyText.Value);
+
             return false;
         }
     }
 
     /// <summary>
-    /// The server only notifies players carrying the artillery detector item; this adds the local player
-    /// to the receiver list so the shelling warning always reaches you.
+    /// This notifies players carrying the artillery detector
     /// </summary>
     internal class ShellingNotifyEveryonePatch : ModulePatch
     {
@@ -116,6 +117,7 @@ namespace Mortar.Patches
             }
 
             int myId = myPlayer.PlayerId;
+
             if (playersToNotify != null)
             {
                 for (int i = 0; i < playersToNotify.Length; i++)
@@ -136,8 +138,8 @@ namespace Mortar.Patches
     }
 
     /// <summary>
-    /// CheckPlayersAlertState() only feeds alarm stages / beeps to players holding item 6655e35b6bc645cb7b059912
-    /// (Item_spec_detector). This makes the local player count as carrying it.
+    /// CheckPlayersAlertState() only feeds alarm stages / beeps to players holding item 6655e35b6bc645cb7b059912.
+    /// This makes the local player count as carrying it.
     /// </summary>
     internal class ForceDetectorPatch : ModulePatch
     {
