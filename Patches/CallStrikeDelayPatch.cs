@@ -2,7 +2,6 @@ using System;
 using System.Reflection;
 using System.Threading.Tasks;
 using HarmonyLib;
-using Mortair;
 using SPT.Reflection.Patching;
 
 namespace Mortar.Patches

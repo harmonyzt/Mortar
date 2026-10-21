@@ -8,7 +8,7 @@ namespace Mortar
         bool IsClient { get; }
         bool RequestStrike(Vector3 position, string reason, IPlayer source);
     }
-    
+
     public static class CoopSupport
     {
         public static IMortarNetwork Network { get; set; }

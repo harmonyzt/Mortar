@@ -5,20 +5,11 @@ using CommonAssets.Scripts.ArtilleryShelling;
 using Comfort.Common;
 using EFT;
 using HarmonyLib;
-using Mortair;
 using SPT.Reflection.Patching;
 
 namespace Mortar.Patches
 {
-    /// <summary>
-    /// Runs before BaseLocalGame.Run (via LocalGame) reaches the shelling controller creation block and
-    /// guarantees GlobalConfiguration.ArtilleryShelling.ArtilleryMapsConfigs contains the current location,
-    /// synthesizing a full map config when the map ships without one (Mortar.Enable On Unsupported Maps).
-    ///
-    /// Two different ids are in play and both must be covered:
-    ///   - Run's controller check uses _raidSettings.selectedLocation.Id (LocalRaidSettings.locationLoot)
-    ///   - the controllers' own Init() reads GameWorld.LocationId (= Location.Id, RaidSettings.SelectedLocation)
-    /// </summary>
+    // Runs before LocalGame reaches the shelling controller
     internal class EnsureMapConfigPatch : ModulePatch
     {
         private static readonly string[] SkippedLocations =
@@ -100,7 +91,9 @@ namespace Mortar.Patches
                 foreach (string locationId in locationIds)
                 {
                     if (!string.IsNullOrEmpty(locationId) && Array.IndexOf(SkippedLocations, locationId) < 0)
+                    {
                         ProcessLocation(settings, locationId, requireClientMap);
+                    }
                 }
             }
             catch (Exception ex)

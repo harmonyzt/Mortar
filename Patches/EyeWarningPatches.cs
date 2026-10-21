@@ -8,7 +8,6 @@ using CommonAssets.Scripts.ArtilleryShelling.Client;
 using EFT;
 using EFT.InventoryLogic;
 using HarmonyLib;
-using Mortair;
 using SPT.Reflection.Patching;
 using UnityEngine;
 

@@ -4,10 +4,9 @@ using System.Linq;
 using Comfort.Common;
 using EFT;
 using EFT.InventoryLogic;
-using Mortar;
 using UnityEngine;
 
-namespace Mortair
+namespace Mortar
 {
     public static class EyeWarning
     {

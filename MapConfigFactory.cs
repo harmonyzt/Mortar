@@ -1,10 +1,9 @@
 using System.Collections.Generic;
 using CommonAssets.Scripts.ArtilleryShelling;
 using EFT;
-using Mortar;
 using UnityEngine;
 
-namespace Mortair
+namespace Mortar
 {
     /// <summary>
     /// ArtilleryShellingMapConfiguration for locations that ship without one
